@@ -1,0 +1,117 @@
+---
+title: "Assignment 4, Task 2"
+author: "Morganne Sigismonti"
+date: "11/13/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(ggpubr)
+library(broom)
+library(lubridate)
+library(kableExtra)
+```
+
+# Introduction NOT FINISHED
+
+A 4 - 5 sentence "mini-introduction" to what this study is exploring, including basic background information about the subject, site and study (with citations as needed), and a brief overview of what is included in the exploratory report. You should probably do this last.
+
+
+# Data and Analyses NOT FINISHED
+
+A 3 - 4 sentence section in which you briefly describe the data, including citation & credit as needed, and provide an overview of the main analysis, statistical methods and tools used.
+
+# Exporatory Findings
+
+### Annual juvenile hare trap counts
+
+```{r}
+bonanza_clean <- read_csv(here("data", "bonanza_hares.csv")) %>%
+   mutate(date = mdy(date))
+
+bonanza_ann_juv <- bonanza_clean %>% 
+  mutate(year = year(date)) %>% 
+  select(year, grid, age) %>% 
+  filter(age == "j") %>% 
+  group_by(year) %>% 
+  count(year) %>% 
+  rename("Total Juvenile Hares" = n) %>% 
+  rename("Year" = year)
+
+kbl(bonanza_ann_juv)%>%
+   kable_styling()
+
+
+```
+
+Figure 1. The total juvenile hare trap counts for each year 1999 through 2012.
+
+```{r}
+bonanza_ann_juv_stats <- bonanza_clean %>% 
+  mutate(year = year(date)) %>% 
+  select(year, grid, age) %>% 
+  filter(age == "j") %>% 
+  group_by(year, age) %>% 
+  count(year) %>% 
+  group_by(age) %>% 
+ summarize(mean = mean(n),
+            median = median(n))
+
+kbl(bonanza_ann_juv_stats)%>%
+   kable_classic()
+
+```
+
+Figure 2. The mean and median of the total number of juvenile hares trapped from 1999 through 2012.
+
+## NOT DONE
+Then, in 3 - 4 sentences below your figure, describe major takeaways from your graph about total snowshoe hare trappings at the site. You might consider:
+
+What were the minimum and maximum counts of juvenile hare trappings?
+Mean or median annual number of juvenile hares trapped?
+General/notable trends?
+These are absolute counts, but this count is also impacted by effort (e.g. the number of days and number of traps in the study each year). What would you suggest be done moving forward (you are not expected to actually do this) to standardize the juvenile hare population in future analyses?
+
+### Visualize juvenile hare weights
+
+## GET HELP WITH NA!!!
+
+```{r}
+bonanza_jweights <- bonanza_clean %>%
+  select(sex, weight, grid) %>%
+  na.omit() %>% 
+  group_by(sex, grid) %>% 
+  summarize(mean = mean(weight),
+            median = median(weight))
+
+ggplot(data = bonanza_jweights, aes(x = sex, y = mean)) +
+  geom_col(aes(color = sex, fill = sex)) +
+  facet_wrap(~ grid) +
+  labs(title = "Juvenile Hare Weights By Sex Across Three Sample Sites", x = "Sex", y = "Average Weight (g)") +
+  theme_minimal()
+
+  
+```
+## NOT DONE!
+Include finalized figure captions below your visualization(s).
+
+Then, in 2 - 3 sentences below your visualization(s) describe in text the main takeaways that you would want the audience to understand from your figures.
+
+Note: There are multiple ways to visualize these comparisons. We encourage you to think carefully then make decisions about how to visualize these comparisons, including:
+
+How can I use faceting to simplify the comparisons into manageable pieces?
+Am I showing the audience the data, summary statistics, or both?
+Have I updated graph labels, headers in facets, etc. to make it as straightforward as possible for viewers?
+
+### Juvenile weight comparison (male & female snowshoe hares)
+
+### Relationship between juvenile weight & hind foot length
+
+### Summary
+
+# Citations
