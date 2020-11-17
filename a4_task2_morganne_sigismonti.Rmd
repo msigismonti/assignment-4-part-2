@@ -15,20 +15,28 @@ library(ggpubr)
 library(broom)
 library(lubridate)
 library(kableExtra)
+library(ggbeeswarm)
+library(effsize)
 ```
 
-# Introduction NOT FINISHED
+### 1. Introduction NOT FINISHED
+
 
 A 4 - 5 sentence "mini-introduction" to what this study is exploring, including basic background information about the subject, site and study (with citations as needed), and a brief overview of what is included in the exploratory report. You should probably do this last.
 
 
-# Data and Analyses NOT FINISHED
+### 2. Data and Analyses NOT FINISHED
+
+Snowshoe Hare physical data was collected and made available by Dr. Kielland and colleagues at the Bonanza Creek Long Term Ecological Research (LTER) Experimental Forest in Fairbanks, Alaska. The data contain observations for 3,197 individual hares across 5 locales in the Tanana valley from 1999 to 2002 (Kielland et al. (2017)).
+
 
 A 3 - 4 sentence section in which you briefly describe the data, including citation & credit as needed, and provide an overview of the main analysis, statistical methods and tools used.
 
-# Exporatory Findings
+### 3. Preliminary Results
 
-### Annual juvenile hare trap counts
+#### A. Annual juvenile hare trap counts
+
+**Table 1.** The total juvenile hare trap counts for each year 1999 through 2012. Data: Kielland et al. (2017).
 
 ```{r}
 bonanza_clean <- read_csv(here("data", "bonanza_hares.csv")) %>%
@@ -39,35 +47,40 @@ bonanza_ann_juv <- bonanza_clean %>%
   select(year, grid, age) %>% 
   filter(age == "j") %>% 
   group_by(year) %>% 
-  count(year) %>% 
-  rename("Total Juvenile Hares" = n) %>% 
+  count(year) %>%
+  rename("Total Juvenile Hares" = n) %>%
   rename("Year" = year)
 
 kbl(bonanza_ann_juv)%>%
-   kable_styling()
+ kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 
 ```
 
-Figure 1. The total juvenile hare trap counts for each year 1999 through 2012.
+
+
+**Table 2.** The mean and median of the total number of juvenile hares trapped from 1999 through 2012. Data: Kielland et al. (2017).
 
 ```{r}
-bonanza_ann_juv_stats <- bonanza_clean %>% 
+bonanza_ann_juv_stats <- bonanza_clean %>%
   mutate(year = year(date)) %>% 
   select(year, grid, age) %>% 
-  filter(age == "j") %>% 
+  filter(age == "j") %>%
+  mutate(age = recode(age, "j" = "Juvenile")) %>%
   group_by(year, age) %>% 
   count(year) %>% 
-  group_by(age) %>% 
- summarize(mean = mean(n),
-            median = median(n))
+  group_by("Age" = age) %>% 
+ summarize("Mean" = mean(n),
+            "Median" = median(n))
+  
 
 kbl(bonanza_ann_juv_stats)%>%
-   kable_classic()
+ kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 ```
 
-Figure 2. The mean and median of the total number of juvenile hares trapped from 1999 through 2012.
+
+
 
 ## NOT DONE
 Then, in 3 - 4 sentences below your figure, describe major takeaways from your graph about total snowshoe hare trappings at the site. You might consider:
@@ -77,26 +90,37 @@ Mean or median annual number of juvenile hares trapped?
 General/notable trends?
 These are absolute counts, but this count is also impacted by effort (e.g. the number of days and number of traps in the study each year). What would you suggest be done moving forward (you are not expected to actually do this) to standardize the juvenile hare population in future analyses?
 
-### Visualize juvenile hare weights
-
-## GET HELP WITH NA!!!
+### 4. Visualizing Juvenile hare weights
 
 ```{r}
-bonanza_jweights <- bonanza_clean %>%
-  select(sex, weight, grid) %>%
-  na.omit() %>% 
-  group_by(sex, grid) %>% 
-  summarize(mean = mean(weight),
-            median = median(weight))
+bonanza_jweights_viz <- bonanza_clean %>%
+  select(age, sex, weight, grid) %>%
+  filter(age == "j") %>% 
+  group_by(sex, grid) %>%
+  mutate(sex = recode(sex, "f" = "Female", "m" = "Male"))
 
-ggplot(data = bonanza_jweights, aes(x = sex, y = mean)) +
-  geom_col(aes(color = sex, fill = sex)) +
-  facet_wrap(~ grid) +
-  labs(title = "Juvenile Hare Weights By Sex Across Three Sample Sites", x = "Sex", y = "Average Weight (g)") +
-  theme_minimal()
-
-  
+ggplot(data = bonanza_jweights_viz, aes(x = sex, y = weight)) +
+  geom_beeswarm(aes(color = sex, fill = sex)) +
+    facet_wrap(~ grid) +
+  geom_boxplot(fill = NA, width = 0.5, outlier.color = NA) +
+  stat_summary(fun=mean, 
+               geom="point",
+               shape=20, 
+               size=4, 
+               color="black", 
+               fill="black") +
+  theme_classic() +
+  labs(title = "Juvenile Hare Weights By Sex Across Three Sample Sites",
+       x = "\nSex",
+       y = "Weight (g)") +
+   scale_color_discrete()
+ 
 ```
+**Figure 2.** Weight (g) for juvenile hares (female, male, and NA (hares with an unknown sex)) across three test locales (bonbs, bonmat, and bonrip). Pink (female), teal(male), and grey (NA) points indicate individual observations for weight (grams) of a juvenile snowshoe hare. Box endpoints indicate the 25^th^ and 75^th^ percentile values; the black point within the box indicate the median and mean value for each sex in each locale, respectively. Data: Kielland et al. (2017)
+
+
+Main takeaways:
+
 ## NOT DONE!
 Include finalized figure captions below your visualization(s).
 
@@ -108,10 +132,98 @@ How can I use faceting to simplify the comparisons into manageable pieces?
 Am I showing the audience the data, summary statistics, or both?
 Have I updated graph labels, headers in facets, etc. to make it as straightforward as possible for viewers?
 
-### Juvenile weight comparison (male & female snowshoe hares)
+### 5. Comparing Juvenile weight comparison (male & female snowshoe hares)
+```{r}
 
-### Relationship between juvenile weight & hind foot length
+bonanza_fmjweights <- bonanza_clean %>%
+  filter(age == "j") %>%
+  filter(!is.na(weight)) %>%
+  filter(!is.na(sex)) %>%
+  group_by(sex)
+ 
+ 
+
+ bonanza_fmjstats <- bonanza_fmjweights %>%
+   mutate(sex = recode(sex, "f" = "Female", "m" = "Male")) %>%
+   summarize(
+    mean_weights = round(mean(weight, na.rm = TRUE),2),
+    sd_weights = round(sd(weight, na.rm = TRUE),2),
+    n = n()
+  ) %>% 
+    na.omit()
+  
+  
+```
+
+**Table 3.** Descriptive statistics (mean, standard deviation, and sample size) for female and male juvenile snowshoe hares.
+
+```{r}
+bonanza_fmjstats %>% 
+  kable(col.names = c("Sex", "Mean weight (g)", "Standard deviation (g)", "Sample size")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+```
+# NOT DONE
+A 2 - 3 sentence comprehensive statement of the means comparison, including at least:
+The actual difference in means
+Effect size (Cohen's *d*)
+Outcome of a two-sample t-test
+
+```{r}
+# Prepping for T-test code:
+
+# plot histograms and qqplots to check assumptions
+
+# Histogram
+ggplot(data = bonanza_fmjweights, aes(x = weight)) +
+  geom_histogram(bins = 12) +
+  facet_wrap(~sex)
+# females: relatively normal
+# males: possibly some negative skew
+
+# QQ Plot
+ggplot(data= bonanza_fmjweights, aes(sample = weight)) +
+  geom_qq() +
+  facet_wrap(~sex)
+# females: very linear
+# males: relatively linear with outliers at tail ends
+
+# Overall: My assumption that the data is normally distributed holds true. Sample size >>  Central Limit Theorem (means will be normally distributed). This means that I can use the  Two-sample t-test to compare my data!
+
+## WHAT DOES >> THIS PART MEAN?
+
+# T-test code:
+
+# Pull vectors of weights for male & female juvenile hares
+m_jhares <- bonanza_fmjweights %>% 
+  filter(sex == "m") %>% 
+  pull(weight)
+  
+f_jhares <- bonanza_fmjweights %>% 
+  filter(sex == "f") %>% 
+  pull(weight)
+
+# Run the t-test:
+jhares_ttest <- t.test(m_jhares, f_jhares)
+
+# Get the tidy model results to call outputs in-line: 
+jhares_ttest_tidy <- tidy(jhares_ttest)
+
+# Get the means & SDs for each: 
+male_mean <- mean(m_jhares)
+female_mean <- mean(f_jhares)
+male_sd <- sd(m_jhares)
+female_sd <- sd(f_jhares)
+
+# Get the effect size: 
+jhares_effsize <- cohen.d(m_jhares, f_jhares)
+
+```
+
+
+### 6. Relationship between juvenile weight & hind foot length
 
 ### Summary
 
-# Citations
+### Citations
+
+Kielland, K., F.S. Chapin, R.W. Ruess, and Bonanza Creek LTER. 2017. Snowshoe hare physical data in Bonanza Creek Experimental Forest: 1999-Present ver 22. Environmental Data Initiative. https://doi.org/10.6073/pasta/03dce4856d79b91557d8e6ce2cbcdc14
