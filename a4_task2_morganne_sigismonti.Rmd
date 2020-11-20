@@ -19,48 +19,46 @@ library(ggbeeswarm)
 library(effsize)
 ```
 
-### 1. Introduction NOT FINISHED
+### 1. Introduction
 
-This report is an exploratory overview of the difference in Snowshoe Hare 
-A 4 - 5 sentence "mini-introduction" to what this study is exploring, including basic background information about the subject, site and study (with citations as needed), and a brief overview of what is included in the exploratory report. You should probably do this last.
-
-
-### 2. Data and Analyses NOT FINISHED
-
-Snowshoe Hare physical data was collected and made available by Dr. Kielland and colleagues at the Bonanza Creek Long Term Ecological Research (LTER) Experimental Forest in Fairbanks, Alaska. The data contain observations for 3,197 individual hares across 5 locales in the Tanana valley from 1999 to 2002 (Kielland et al. (2017)).
+This report is an exploratory overview of the difference in Juvenile Snowshoe Hare collection counts, weights, and hind foot lengths observed across locales (bonbs, bonmat, bonrip) within the Bonanza Creek Long Term Ecological Research (LTER) Experimental Forest in Fairbanks, Alaska from 1999 - 2012 (Kielland et al. (2017). First, I explore how many juvenile hares were counted per year. Then, I explore juvenile hare weights of each sex across three locales. Lastly, I explore the relationship between juvenile weight & hind foot length. 
 
 
-A 3 - 4 sentence section in which you briefly describe the data, including citation & credit as needed, and provide an overview of the main analysis, statistical methods and tools used.
+### 2. Data and Analyses
 
-### 3. Preliminary Results
+Snowshoe Hare physical data was collected and made available by Dr. Kielland and colleagues at the Bonanza Creek (LTER) Experimental Forest in Fairbanks, Alaska. The data contain observations for 3,197 individual hares across five locales in the Tanana valley from 1999 to 2012 (Kielland et al. (2017)). After exploring the data through data visualization, weights between male and female hares are compared using a two-sample t-test with a significance level ($\alpha$) of 0.05 throughout. Cohen's *d* effect size is used to describe the differences between these groups. Simple linear regression is used to explore the relationship between hind foot length and weight. All analyses are in R version 4.0.2 using RStudio version 1.3.1093. 
 
-#### A. Annual juvenile hare trap counts
+### 3. Preliminary Results - Annual juvenile hare trap counts
 
-**Table 1.** The total juvenile hare trap counts for each year 1999 through 2012. Data: Kielland et al. (2017).
 
-```{r}
+```{r, include = FALSE}
+# new subset up data with dates in dates class
 bonanza_clean <- read_csv(here("data", "bonanza_hares.csv")) %>%
    mutate(date = mdy(date))
 
+# make a table of the total counts of hares per year
 bonanza_ann_juv <- bonanza_clean %>% 
   mutate(year = year(date)) %>% 
   select(year, grid, age) %>% 
   filter(age == "j") %>% 
   group_by(year) %>% 
-  count(year) %>%
-  rename("Total Juvenile Hares" = n) %>%
-  rename("Year" = year)
-
-kbl(bonanza_ann_juv)%>%
- kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  count(year)
 
 
 ```
 
+```{r}
+# make a bar graph of the total counts of hares per year
+ggplot(data = bonanza_ann_juv, aes(x= as.character(year), y = n)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Juvenile Hares Counted by Year 1999 - 2012 (SIGISMONTI)", x = "Year", y = "Number of Juveniles Counted")
+```
 
+
+**Figure 1.** Total amount of juvenile hares counted for each year, 1999 - 2012. The years 2002 and 2009 are not shown because there were no juvenile hares counted in those years. Data: Kielland et al. (2017)
 
 ```{r, include = FALSE}
-## The mean and median of the total number of juvenile hares trapped from 1999 through 2012. Data: Kielland et al. (2017).
+## make a table of the The mean and median of the total number of juvenile hares trapped from 1999 through 2012
 bonanza_ann_juv_stats <- bonanza_clean %>%
   mutate(year = year(date)) %>% 
   select(year, grid, age) %>% 
@@ -72,26 +70,27 @@ bonanza_ann_juv_stats <- bonanza_clean %>%
  summarize("Mean" = mean(n),
             "Median" = median(n))
   
-
+# make the table look nice
 kbl(bonanza_ann_juv_stats)%>%
  kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 ```
-Juvenile Snowshoe Hare trap counts per year are shown in the figure.The minimum and maximum number of juvenile hares counted was 2 hares in 2010 and 126 hares in 1999. The mean and median annual hare trap counts were `r bonanza_ann_juv_stats$Mean` and `r bonanza_ann_juv_stats$Median`. From year 1999 to 2010, there is an overall decrease in the amount of juvenile snowshoe hare samples collected per year. Moving forward, 
+Juvenile Snowshoe Hare trap counts per year are shown in Figure 1. The minimum and maximum number of juvenile hares counted was 2 hares in 2010 and 126 hares in 1999. The mean and median annual hare trap counts were `r bonanza_ann_juv_stats$Mean` and `r bonanza_ann_juv_stats$Median`. From year 1999 to 2012, there is an overall decrease in the amount of juvenile snowshoe hare samples collected per year. Moving forward, the data collectors should standardize their data collection to minimize confounding variables in their data. For example, they can try to collect juvenile hares at similar times of the year. 
 
 
-## HELP WHAT DOES THIS MEAN?
-What would you suggest be done moving forward (you are not expected to actually do this) to standardize the juvenile hare population in future analyses?
 
 ### 4. Visualizing Juvenile hare weights
 
 ```{r}
+# make a subset of data that only includes relevant juvenile hare information
 bonanza_jweights_viz <- bonanza_clean %>%
   select(age, sex, weight, grid) %>%
   filter(age == "j") %>% 
   group_by(sex, grid) %>%
-  mutate(sex = recode(sex, "f" = "Female", "m" = "Male"))
+  mutate(sex = recode(sex, "f" = "Female", "m" = "Male")) %>% 
+  mutate()
 
+# make a beeswarm plot with box plot, mean, and median of juvenile hare weights at each locale
 ggplot(data = bonanza_jweights_viz, aes(x = sex, y = weight)) +
   geom_beeswarm(aes(color = sex, fill = sex)) +
     facet_wrap(~ grid) +
@@ -114,12 +113,12 @@ ggplot(data = bonanza_jweights_viz, aes(x = sex, y = weight)) +
 **Figure 2.** Weight (g) for juvenile hares (female, male, and NA (hares with an unknown sex)) across three test locales (bonbs, bonmat, and bonrip). Pink (female), teal(male), and grey (NA) points indicate individual observations for weight (grams) of a juvenile snowshoe hare. Box endpoints indicate the 25^th^ and 75^th^ percentile values; the black line and black point within the box indicate the median and mean value for each sex in each locale, respectively. Data: Kielland et al. (2017)
 
 
-Distributions of the hare weights do not seem to be normal across the sexes within the 3 locales. Males seem to have a lower average and median weight than females. There is not much of a trend for the NA group weights across sites. There are more data points collected of males and females at the bonrip locale than the other two locales.
+Distributions of the hare weights do not seem to be normal across the sexes within the 3 locales. Females seem to have a lower average and median weight than Males. There is not much of a trend for the NA group weights across sites. There are more data points collected of males and females at the bonrip locale than the other two locales.
 
 
 ### 5. Comparing Juvenile weight comparison (male & female snowshoe hares)
 ```{r}
-
+# make a data table with only juvenile hare weights for female and males, excluding any NA values
 bonanza_fmjweights <- bonanza_clean %>%
   filter(age == "j") %>%
   filter(!is.na(weight)) %>%
@@ -127,7 +126,7 @@ bonanza_fmjweights <- bonanza_clean %>%
   group_by(sex)
  
  
-
+# Make a table with the mean, standard deviation and sample size of male and female weights
  bonanza_fmjstats <- bonanza_fmjweights %>%
    mutate(sex = recode(sex, "f" = "Female", "m" = "Male")) %>%
    summarize(
@@ -140,9 +139,10 @@ bonanza_fmjweights <- bonanza_clean %>%
 ```
 
 
-**Table 3.** Descriptive statistics (mean, standard deviation, and sample size) for female and male juvenile snowshoe hares.
+**Table 1.** Descriptive statistics (mean, standard deviation, and sample size) for weights of female and male juvenile snowshoe hares.
 
 ```{r}
+# make the table look nice
 bonanza_fmjstats %>% 
   kable(col.names = c("Sex", "Mean weight (g)", "Standard deviation (g)", "Sample size")) %>% 
   kable_styling(bootstrap_options = "striped", full_width = FALSE)
@@ -168,7 +168,7 @@ ggplot(data= bonanza_fmjweights, aes(sample = weight)) +
 # females: very linear
 # males: relatively linear with outliers at tail ends
 
-# Overall: My assumption that the data is normally distributed holds true. Sample size and therefore Central Limit Theorem (means will be normally distributed). This means that I can use the Two-sample t-test to compare my data!
+# Overall: My assumption that the data is normally distributed holds true. Sample size is normally and therefore Central Limit Theorem (means will be normally distributed). This means that I can use the Two-sample t-test to compare my data!
 
 
 # T-test code:
@@ -211,21 +211,26 @@ On average, male juvenile snowshoe hares have a higher weight than female snowsh
 juv_hares <- bonanza_clean %>% 
   filter("j" == age)
 
+# Plot a 
 ggplot(data = juv_hares, aes(x = hindft, y = weight)) +
   ggtitle("Relationship Between Juvenile Hare Hind Foot Length and Weight (SIGISMONTI)") +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE, color = "gray30") +
+  geom_smooth(method = "lm",
+              se = FALSE,
+              color = "gray30") +
   theme_minimal() +
   labs(x = "\nHind Foot Length (mm)",
        y = "Weight (g)\n") +
-  theme(plot.title = element_text(size = 11))
+  theme(plot.title = element_text(size = 11)) +
+ggpubr::stat_regline_equation(label.x = 60  , label.y = 1200)
 
 
 
 ```
 
-
 ```{r}
+# Linear Regression
+
 # Do linear regression
 juv_hare_lm <- lm(weight ~ hindft, data = juv_hares)
 
@@ -241,11 +246,16 @@ juv_cor <- cor.test(juv_hares$weight, juv_hares$hindft)
 
 # Tidy version of correlation output:
 juv_cor_tidy <- tidy(juv_cor)
+
+
+
 ```
 
-The relationship between juvenile hare weight and hind foot length appears non-linear. Simple linear regression revealed that hare weight does significantly predict hare hind foot length (p < 0.001, R^2^ = `r round(juv_lm_glance$r.squared,2)`) with an average slope of $\beta$ = `r round(juv_lm_tidy$estimate[2], 2)` g mm^-1^ (i.e., for each one millimeter increase in hind foot length we expect an average increase in weight of `r round(juv_lm_tidy$estimate[2], 2)` g). Hind foot length and weight have a medium, and significant, positive correlation (Pearson's *r* = `r round(juv_cor_tidy$estimate,2)`, p < 0.001). Diagnostic plots (not included) reveal not normally distributed and heteroscedastic residuals. 
 
-### WHAT WORRIES ME? which assumptions of linear regression may be a concern? ourliers from cooks? low p value but heteroscedastic? confused here
+**Figure 3.** Relationship between hind foot length (mm) and weight (g) for the juvenile hares. These points each indicate individual juvenile hare measurements. Linear model summary: $\beta$~1~ = `r round(juv_lm_tidy$estimate[2], 2)` g mm^-1^, p < 0.001, R^2^ = `r round(juv_lm_glance$r.squared,2)`, Pearson's *r* = `r round(juv_cor_tidy$estimate,2)`). Data: Kielland et al. (2017)
+
+
+The relationship between juvenile hare weight and hind foot length appears non-linear. Simple linear regression revealed that hare weight does significantly predict hare hind foot length (p < 0.001, R^2^ = `r round(juv_lm_glance$r.squared,2)`) with an average slope of $\beta$ = `r round(juv_lm_tidy$estimate[2], 2)` g mm^-1^ (i.e., for each one millimeter increase in hind foot length we expect an average increase in weight of `r round(juv_lm_tidy$estimate[2], 2)` g). Hind foot length and weight have a medium, and significant, positive correlation (Pearson's *r* = `r round(juv_cor_tidy$estimate,2)`, p < 0.001). The diagnostic plots (included analysis, but not included here) reveal not normally distributed and heteroscedastic residuals. The heterocedascicity is of concern because, if the data was normally distributed, we would think that it would be homoscedastic. This may be caused by the outliers in the data and any confounding variables that affected the data. 
 
 
 
@@ -254,8 +264,8 @@ The relationship between juvenile hare weight and hind foot length appears non-l
 Exploratory data analysis reveals the following initial findings: 
 
 - 
-- 
-- 
+- On average, male juvenile hares have a higher weight than female hares (The difference is significant, and the effect size is small)
+- Hind foot length is slightly linearly related with weight across all sexes and locales. The relationship (by simple linear regression) is significant, with an average slope (expected average increase in weight with a 1 mm increase in hind foot length)of $\beta$ = `r round(juv_lm_tidy$estimate[2], 2)` g mm^-1^.
 
 ### Citations
 
